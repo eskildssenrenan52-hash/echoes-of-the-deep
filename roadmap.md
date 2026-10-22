@@ -12,3 +12,10 @@
 - [x] Trazer Golden Arrow Odyssey (rota /odyssey) mantendo Mana Echoes (/mana).
 - [x] Abertura: tela preta, Remulu Games, carregamento em pixel art, cena pulável, flash branco, título e fundo de biomas.
 - [x] Contas com perfil (nome de jogador); progresso continua salvo no navegador.
+# Abismo do Cântico + Povo do Mundo + janelas novas (Golden Arrow Odyssey)
+- [x] Trazer o repositório e recriar contas (perfil) no Lovable Cloud.
+- [x] Gerador da masmorra de 100 andares, 9 guardiões e chefe final Ømnia (src/odyssey/dungeon.ts).
+- [x] Gerador de 225 moradores com 4 missões cada, Selos regionais e o Coro dos Trinta (src/odyssey/townsfolk.ts).
+- [ ] Conectar masmorra e moradores ao motor (entrada em Potos, escadas, chefes, missões "falar"/"andar", salvamento).
+- [ ] Redesenhar todas as janelas em pixel art e organizar o livro de missões (abas e filtros).
+- [ ] Testes e verificação jogando.
