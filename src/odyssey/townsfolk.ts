@@ -4,6 +4,9 @@
 import type { BossDef, EnemyKind, ItemDef, NpcDef, Palette, QuestDef, QuestGoal } from './data';
 import { FRONTIER_GATES, type FrontierBiome } from './frontier';
 
+export type FolkGoal = QuestGoal | { kind: 'talk'; npc: string; line: string } | { kind: 'floor'; n: number };
+export type FolkQuest = Omit<QuestDef, 'goal'> & { goal: FolkGoal };
+export type FolkNpc = NpcDef & { hub?: { tx: number; ty: number } | undefined };
 export interface TownsfolkContext {
   biomeNames: Record<string, string>;
   biomeEnemies: Record<string, EnemyKind[]>;
@@ -159,14 +162,14 @@ const pick = <T,>(arr: readonly T[], a: number, b: number): T => arr[h32(a, b) %
 
 function fill(s: string, v: Record<string, string>) { return s.replace(/\{(\w+)\}/g, (_, k: string) => v[k] ?? `{${k}}`); }
 
-export interface Townsfolk { npcs: NpcDef[]; quests: QuestDef[]; heralds: string[]; choirQuest: string }
+export interface Townsfolk { npcs: FolkNpc[]; quests: FolkQuest[]; heralds: string[]; choirQuest: string }
 
 export function buildTownsfolk(ctx: TownsfolkContext): Townsfolk {
   const regions: Region[] = [
     ...LEGACY_REGIONS,
     ...FRONTIER_GATES.map(g => ({ key: g.biome as string, hub: { tx: g.tx, ty: g.ty + 2 }, resource: ctx.frontierResource[g.biome] ?? 'stone', frontier: true })),
   ];
-  const npcs: NpcDef[] = [], quests: QuestDef[] = [], heralds: string[] = [];
+  const npcs: FolkNpc[] = [], quests: FolkQuest[] = [], heralds: string[] = [];
   const used = new Set<string>();
   const nameFor = (i: number) => {
     for (let k = 0; ; k++) { const n = `${pick(FIRST, i, 3 + k)} ${pick(LAST, i, 7 + k * 5)}`; if (!used.has(n)) { used.add(n); return n; } }
@@ -232,18 +235,18 @@ export function buildTownsfolk(ctx: TownsfolkContext): Townsfolk {
     const neighbour = myPos > 0 ? prev[myPos - 1] : undefined;
     seed.steps.forEach((st, k) => {
       const id = `${s.id}_${k + 1}`;
-      let goal: QuestGoal, n = 0;
+      let goal: FolkGoal, n = 0;
       if (st.kind === 'talk') goal = { kind: 'talk', npc: to.id, line: fill(st.reply ?? '', vars) };
       else if (st.kind === 'collect') { n = 4 + (h32(i, k) % 6) + Math.floor(lvl / 6); goal = { kind: 'collect', item: s.region.resource, n }; }
       else if (st.kind === 'kill') { n = 5 + (h32(i, k + 9) % 6) + Math.floor(lvl / 5); goal = { kind: 'kill', target: enemy, n }; }
       else goal = useBoss && boss ? { kind: 'boss', target: boss.id } : { kind: 'floor', n: floor };
-      const finale = goal.kind === 'boss' ? `Derrote ${boss?.name} em ${vars.place}.` : `Alcance o andar ${floor} do Abismo do Cântico (entrada em Potos).`;
+      const finale = goal.kind === 'boss' ? `Derrote ${boss?.name} em ${vars['place']}.` : `Alcance o andar ${floor} do Abismo do Cântico (entrada em Potos).`;
       const v = { ...vars, n: String(n), finale };
       const requiresAll = k === 2 && neighbour ? [`${neighbour.id}_2`] : undefined;
       quests.push({
         id, giver: s.id, main: false, title: fill(st.title, v), desc: fill(st.desc, v), intro: st.intro.map(l => fill(l, v)), outro: fill(st.outro, v),
         goal, ...(k ? { requires: `${s.id}_${k}` } : {}), ...(requiresAll ? { requiresAll } : {}),
-        reward: { xp: Math.round((40 + lvl * lvl * 3) * (1 + k * 0.6)), gold: Math.round((20 + lvl * 8) * (1 + k * 0.5)), items: k === 3 ? [rewardItems[h32(i, 81) % rewardItems.length]!, 'hi_potion'] : k === 1 ? ['potion'] : undefined },
+        reward: { xp: Math.round((40 + lvl * lvl * 3) * (1 + k * 0.6)), gold: Math.round((20 + lvl * 8) * (1 + k * 0.5)), ...(k === 3 ? { items: [rewardItems[h32(i, 81) % rewardItems.length]!, 'hi_potion'] } : k === 1 ? { items: ['potion'] } : {}) },
       });
     });
   });
@@ -266,7 +269,7 @@ export function buildTownsfolk(ctx: TownsfolkContext): Townsfolk {
     });
   }
   // 4) O Coro dos Trinta: a Regente do Coro em Potos reúne todos os Selos e aponta para Ømnia.
-  const choirNpc: NpcDef = { id: 'folk_choir', name: 'Regente Ilyra', title: 'Maestra do Coro dos Trinta', tx: 128, ty: 140, pal: { skin: '#f4dcc4', hair: '#e8e8e8', body: '#3a2a6a', legs: '#1a1430', accent: '#ffd040' },
+  const choirNpc: FolkNpc = { id: 'folk_choir', name: 'Regente Ilyra', title: 'Maestra do Coro dos Trinta', tx: 128, ty: 140, pal: { skin: '#f4dcc4', hair: '#e8e8e8', body: '#3a2a6a', legs: '#1a1430', accent: '#ffd040' },
     lines: ['Trinta regiões, trinta selos, uma única Canção.', 'Quando todos os selos brilharem, o Coro poderá cantar contra o que dorme no fundo.', 'Ouça os moradores. Toda história pequena é uma nota da grande.'] };
   npcs.push(choirNpc);
   const choirQuest = 'folk_choir_1';
