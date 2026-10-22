@@ -129,7 +129,8 @@ export function generateFloor(floor: number): DungeonFloor {
 
   const startRoom = final ? rooms[0]! : order[0]!.room;
   const endRoom = final || guardian ? rooms[rooms.length - 1]! : order[order.length - 1]!.room;
-  const start = center(startRoom), end = center(endRoom);
+  const s0 = center(startRoom), e0 = center(endRoom);
+  const start = { tx: s0.x, ty: s0.y }, end = { tx: e0.x, ty: e0.y };
   // Decoração sólida apenas no interior das salas comuns, longe das entradas.
   for (const room of rooms) {
     if (room === startRoom || room === endRoom || room.w < 9 || room.h < 8) continue;
@@ -141,7 +142,7 @@ export function generateFloor(floor: number): DungeonFloor {
     }
   }
   if (final) {
-    const c = end;
+    const c = e0;
     // Arena final: pilares em anel, poças de vazio nas bordas.
     for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; set(Math.round(c.x + Math.cos(a) * 22), Math.round(c.y + Math.sin(a) * 16), T.PILLAR); }
     for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + 0.2; set(Math.round(c.x + Math.cos(a) * 30), Math.round(c.y + Math.sin(a) * 22), T.LAVA); }
@@ -167,13 +168,13 @@ export function generateFloor(floor: number): DungeonFloor {
     const room = guardian && i < 2 ? endRoom : rooms[Math.floor(r() * rooms.length)]!;
     if (room === startRoom) continue;
     const tx = room.x + 1 + Math.floor(r() * (room.w - 2)), ty = room.y + 1 + Math.floor(r() * (room.h - 2));
-    if (tiles[ty * W + tx] !== theme.floor || (tx === end.x && ty === end.y)) continue;
+    if (tiles[ty * W + tx] !== theme.floor || (tx === end.tx && ty === end.ty)) continue;
     chests.push({ id: `abyss-${floor}-${i}`, tx, ty, gold: Math.round(30 + floor * floor * 2.2), item: tier[Math.floor(r() * tier.length)]!, qty: 1 + Math.floor(r() * 2) });
     i++;
   }
   // Garante chão nos pontos-chave.
-  for (const pt of [start, end]) for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) set(pt.x + x, pt.y + y, theme.floor);
-  const boss = guardian ? guardianBoss(floor, end.x, end.y - (final ? 0 : 2)) : null;
+  for (const pt of [start, end]) for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) set(pt.tx + x, pt.ty + y, theme.floor);
+  const boss = guardian ? guardianBoss(floor, end.tx, end.ty - (final ? 0 : 2)) : null;
   return { floor, theme, world: { tiles, biomes, nodes: [] }, w, h, ox: OX, oy: OY, rooms, start, stairs: end, spawns, chests, boss };
 }
 
